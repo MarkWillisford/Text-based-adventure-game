@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>The village of Tal'Quessir</title>
+<!-- Prog 209 Project 1: Text Adventure -->
+<!-- Mark Willisford -->
+<!-- Due: 29Jan17 -->
+<!-- 18Jan17 -->
+<!-- 25Jan17 UPDATE LOG; I added what I believe are the required object functions and the primary world map. It should be populated and technically working -->
+<!-- 	even if I can't interact with it much at the moment. I've done some basic testing and varified the script runs with no errors. Whew, most of the -->
+<!-- 	pre-game logic is done. I think. :-)  tomorrow I'll start on the game logic and commands themselves. I have some pretty detailed notes so I should be -->
+<!-- 	able to finish that part. Some of the basic layout/css is done. I truly have a harder time with CSS than I do the logic of the game. -->
+<!-- 26Jan17 UPDATE LOG; first additions are the transparent input box and the control div. Failed to get the output div to align text on the bottom. I am -->
+<!-- 	moving on. Never spend to much time on something extra. I may come back to it. I was able to get the moveTo function working properly after a good -->
+<!-- 	bit of error fixing. -->
+<!-- 27Jan17 UPDATE LOG; Today the plan is to get the player moving and clean up the moveTo function. I also plan on finishing the basic css. In short, the -->
+<!--	game should have basic functionality. -->
+<!--    Player is moving and the images change approprietely. Quests, combat and loot items are working -->
+<!-- 28Jan17 UPDATE LOG; Plan for the day is to finish the requirements of the assignment first. Then if time allows, continue with a few other features -->
+<!--	Display buttons working. Everything is working except that the item system is all screwed. I'm passing them as objects, ids, and array elements. -->
+<!--	This gets fixed now. -->
+<!--	Fixed, also fixed a few other minor bugs and emplemented an even on Enter press --> 
+<!--	There are several things I would add; popup windows, vendors, maybe even levels. But those are way beyond the scope of this assignment -->
+
+
+<!-- jigsaw.w3.org/css-validator reports the following errors:	-->
+<!--	Sorry! We found the following errors (4) -->
+<!--	URI : TextArea -->
+<!--	69	#map	Parse Error planned expansion; -->
+<!--	69	I also want to make the image transparent like the sprite from our first assignment	Parse Error [ "fog of war" style map] -->
+<!--	72	I also want to make the image transparent like the sprite from our first assignment	Parse Error [ as you progress. As these are not part of the assignment I may or may not implement it.  } ul] -->
+<!--	77	I also want to make the image transparent like the sprite from our first assignment	Value Error : font-size attempt to find a semi-colon before the property name. add it -->
+
+ 
+<!-- all of these complaints are about the comment on line 79-90. Notepad++ won't let me use the /*  */ that W3 mentions. -->
+<!-- Do you have any recomondations or suggestions? -->
+
+
+<!-- validator.w3.org reports "Document checking completed. No errors or warnings to show." -->
+
+
+<style type="text/css">
+	#container{
+		width: 1000px;
+		height: 500px;
+		border-style: none;
+		border-color: black;
+		text-align: center;
+		background-image: url("Images/Home.jpg");
+		z-index: 0;
+		position: relative;
+	}
+	#playerImage{
+		width: 34px;
+		height: 75px;
+		float: left;
+		background-image: url("Images/Player.png");
+		z-index: 1;
+		top: 1px;
+		position: absolute;
+	}
+	#playerStats{
+		width: 100px;
+		height: 150px;
+		float: left;
+		z-index: 1;
+		top: 76px;
+		left: 0px;
+		position: absolute;
+		border-style: none;
+		border-color: black;
+		text-align: left;
+	}	
+	#map{
+		width: 86px;		
+		height: 58px;	
+		border-style: none;
+		border-color: black;
+		top: 0px;
+		right: 0px;
+		position: absolute;	<!-- planned expansion; I also want to make the image transparent like the sprite from our first assignment, "fog of war" style map, reviels -->
+							<!-- as you progress. As these are not part of the assignment I may or may not implement it. -->
+	}
+	ul{
+		list-style-type: none;
+		padding: 0;
+		margin: 0;
+		font-size: 50%
+		font-weight: bold;
+		color: yellow;
+	}	
+	#control{
+		width: 400px;
+		height: 25px;	
+		border-style: none;
+		border-color: black;
+		bottom: 15px;
+		left: 300px;
+		position: absolute;
+	}
+	#textInput{
+		width: 250px;
+		height: 25px;
+		border-style: solid;
+		border-color: black;
+		bottom: 0px;
+		left: 0px;
+		position: absolute;		
+		font-weight: bold;
+		color: yellow;
+	}
+	#output{
+		width: 300px;
+		height: 100px;
+		border-style: none;
+		border-color: black;
+		bottom: 25px;
+		left: 0px;
+		position: absolute;	
+		text-align: left;	
+		font-weight: bold;
+		color: yellow;		
+		vertical-align: bottom;
+	}
+	#btnText{
+		width: 43px;
+		height: 20px;	
+		bottom: 3px;
+		left: 255px;
+		position: absolute;
+	}
+	.switchingDivs{
+		width: 250px;
+		height: 400px;	
+		border-style: none;
+		border-color: black;
+		top: 55px;
+		right: 0px;
+		position: absolute;
+		font-weight: bold;
+		color: yellow;
+		display: none;	
+	}
+	.centeredP{
+		align: center;
+	}
+	#pHelp{
+		text-align: left;
+		hidden: true;
+		}
+
+</style>
+</head>
+
+<body>
+	<div id="container">
+
+		<div id="playerImage">			
+		</div>
+		<div id="playerStats">
+			<ul id="listStats">
+				<li id="HP" >HP:         </li>
+				<li id="Gld">Gold:       </li>
+				<li id="XP" >Experience: </li>
+				<li id="Lvl">Level:      </li>
+			</ul>
+		</div>
+		<img src="Images/Map.png" id="map" alt = "Map" class="sprite">
+		<div class= "switchingDivs" id="Help"><p class ="centeredP" >Would you like some help?</p>
+			<p id="pHelp">You may enter commands into the text box. Choices include:<br>North, South, East, West<br>Attack, Look and Drink</p>
+		
+		</div>
+		<div class= "switchingDivs" id="Messages"></div>
+		<div class= "switchingDivs" id="Inventory">Your Inventory includes:<br></div>
+		<div class= "switchingDivs" id="Quests">Quests:<br></div>
+		<input type="text" id="textInput" style="background-color:transparent;" />
+		<div id="control">	
+			<button type="button" class="Controls" id="btnHelp" onclick="ShowHelp()">Help</button>
+			<button type="button" class="Controls" onclick="ShowInventory()">Inventory</button>
+			<button type="button" class="Controls" onclick="ShowQuests()">Quests</button>
+			<button type="button" class="Controls" id="btnMessages" onclick="ShowMessages()">Messages</button>	
+			<button type="button" class="Controls" id="btnSave" onclick="Save()">Save</button>				
+			<button type="button" class="Controls" id="btnLoad" onclick="Load()">Load</button>				
+		</div>
+		<div id="output"></div>			
+		<button type="button" class="btn" id="btnText" onclick="myTest()">Enter</button>
+	</div>
+	
+	<script>
+	<!-- An event listener so the user may press enter. This is another great place for expansion. Event listeners for the other buttons -->
+	document.getElementById("textInput").addEventListener("keyup", 
+		function(event) {
+			event.preventDefault();
+			if (event.keyCode == 13) {
+				document.getElementById("btnText").click();
+			}
+		});
+		
+		<!-- some global variables -->
+		let arrayOutput = [];
+		let arrayLocations = [];
+		let	arrayItems = [];					
+		let arrayMonsters = [];
+		let arrayQuests = [];
+		let commands 
+		  = ["north", "east", "south", "west", "attack", "look", "drink"];
+		let currentCommand = "";
+		let Me = new Player (10,10,20,0,1);
+		let currentMonster = "";
+		let currentWeapon = "";
+		
+		<!-- Testing Output function -->
+		function myTest(){
+			<!-- create variables and assign from the text box -->
+			let inputString = document.getElementById("textInput").value;
+			<!-- First we need to do something in response to whatever they typed -->
+			playersCommand = inputString.toLowerCase();
+			let action = "";
+			
+			//Do we know what action the player wants?
+			for(let i = 0; i < commands.length; i++)
+			{
+				if(playersCommand.indexOf(commands[i]) !== -1)		
+				{
+					action = commands[i];
+					console.log("player's command: " + currentCommand);	<!-- for testing -->
+					break;
+				}
+			}
+			switch (action) {
+				case "north":
+					moveNorth();
+					text = "Headed North; "+ currentCommand;
+					break; 
+				case "east":
+					moveEast();
+					text = "Headed East; "+ currentCommand;
+					break; 
+				case "south":
+					moveSouth();
+					text = "Headed South; "+ currentCommand;
+					break; 
+				case "west":
+					moveWest();
+					text = "Headed West; "+ currentCommand;
+					break;
+				case "attack":
+					useWeapon();
+					text = "Attacking; "+ currentCommand;
+					break;
+				case "look":
+					lookAround();
+					break;
+				case "drink":
+					usePotion();
+					break;
+				default:
+					document.getElementById("Messages").innerHTML = "Please enter a valid command";
+			}
+
+			<!-- now record it for the output -->
+			inputString += '<br>';
+
+			if (arrayOutput.length < 5){
+				arrayOutput.push(inputString);
+			}			
+			<!-- this should remove the first element in the array, thus the oldest and -->
+			<!-- adds the new output at the end. -->
+			else {
+				arrayOutput.splice(0, 1);
+				arrayOutput.push(inputString);
+			}
+			<!-- Clear the output then print the array into the output -->
+			document.getElementById("output").innerHTML = '';
+			for (let i = 0; i < arrayOutput.length; i++){
+				document.getElementById("output").innerHTML += arrayOutput[i];
+			}
+		// clear and set focus
+		document.getElementById("textInput").value = "";
+		document.getElementById("textInput").focus();
+		}
+		<!-- classes: Player, Location, Item, Quest, Monster, Weapon, Potion -->
+		<!-- First the "parent" objects -->
+		function Item(ID, Name, NamePlural) {
+			this.ID = ID;
+			this.Name = Name;
+			this.NamePlural = NamePlural;
+		}
+
+		function LivingCreature(CurrentHitPoints, MaximumHitPoints){
+			this.CurrentHitPoints = CurrentHitPoints;
+			this.MaximumHitPoints = MaximumHitPoints;
+		}
+		
+		<!-- Second the "child" objects -->
+		function HealingPotion(ID, Name, NamePlural, AmountToHeal){
+			Item.call(this, ID, Name, NamePlural);
+			this.AmountToHeal = AmountToHeal;
+		}
+		
+		function Weapon(ID, Name, NamePlural, MinimumDamage, MaximumDamage){
+			Item.call(this, ID, Name, NamePlural);
+			this.MinimumDamage = MinimumDamage;
+			this.MaximumDamage = MaximumDamage;
+		}
+		
+		function Player(CurrentHitPoints, MaximumHitPoints, gold, xp, lvl){
+			LivingCreature.call(this, CurrentHitPoints, MaximumHitPoints);
+			this.gold = gold;		
+			this.xp = xp;			
+			this.lvl = lvl;	
+			this.arrayInventory = [];
+			this.arrayQuests = [];
+			this.CurrentLocation;
+			this.HasRequiredItemToEnterThisLocation = function(location){
+				if(location.ItemRequiredToEnter === ""){
+					// there is no required item for this location
+					return true;
+				}
+				
+				// There is a required item, so check to see if I have it
+				for (ii=0; ii<this.arrayInventory.length; ii++){
+					if(this.arrayInventory[ii].Details.ID === location.ItemRequiredToEnter.ID){
+						// We found the required item, return true
+						return true;
+					}
+				}
+				
+				// We didn't find the required item.
+				return false;
+			};
+			this.HasThisQuest = function(quest){
+				let hasQuest = false;
+				for(i=0; i<this.arrayQuests.length;i++){
+					if(this.arrayQuests[i].Details === quest){
+						hasQuest = true;
+					}
+				}
+				
+				return hasQuest;
+			};
+			this.CompletedThisQuest = function(quest){
+				for(i=0; i<this.arrayQuests.length;i++){
+					if(this.arrayQuests[i].Details === quest){
+						return this.arrayQuests[i].IsCompleted;
+					}
+				}
+				
+				return false;
+			}
+			this.HasAllQuestCompletionItems = function(quest){
+				for(let i=0;i<arrayQuests[quest].arrayQuestCompletionItems.length;i++){
+					foundItemInPlayersInventory = false;
+					
+					//check each item in the player's inventory.
+					for(let ii=0;ii<this.arrayInventory.length;ii++){
+						if(this.arrayInventory[ii].Details === 
+							arrayQuests[quest].arrayQuestCompletionItems[i].Details){
+							//found it
+							foundItemInPlayersInventory = true;
+							//enough?
+							if(this.arrayInventory[ii].Quantity <
+								arrayQuests[quest].arrayQuestCompletionItems[i].Quantity){
+								//not enough
+								return false;
+							}
+						}
+					}
+					if(foundItemInPlayersInventory===false){
+						return false;
+					}
+				}
+				
+				// If we got here, then the player must have all the required
+				// items and enough of them.
+				return true;
+			}
+			this.RemoveQuestCompletionItems = function(quest){	// asking for arrayQuest index. As this got more complex I found myself loosing track of
+																// what I was passing; objects, indexes or array elements. I'm too reliant on typecast
+				for(i=0;i<arrayQuests[quest].arrayQuestCompletionItems.length;i++){			// Feature thought here, I really should add a check for 0 quantity
+					for(ii=0;ii<this.arrayInventory.length;ii++){							// and remove the item from the array. 
+						if(this.arrayInventory[ii].Details === 
+							arrayQuests[quest].arrayQuestCompletionItems[i].Details){
+							// subtract the quantity from the players inventory
+							this.arrayInventory[ii].Quantity -= 
+								arrayQuests[quest].arrayQuestCompletionItems[i].Quantity;
+							if (this.arrayInventory[ii].Quantity === 0){					// Yay, feature added. I'm having too much fun.
+								this.arrayInventory.splice(ii,1); 
+							}
+						}
+					}
+				}
+			}
+			this.AddItemToInventory = function(itemToAdd){	// wants the item object
+				for(ii=0;ii<this.arrayInventory.length;ii++){
+					if(this.arrayInventory[ii].Details.ID === itemToAdd.ID){
+						this.arrayInventory[ii].Quantity++;
+						return; // we added the item and are done, so exit the function.  
+					}
+				}
+				// They didn't have the item assuming the return worked. 
+				this.arrayInventory.push(new InventoryItem(itemToAdd, 1));			
+			}
+			this.MarkQuestCompleted = function(quest){	// asking for same as HasThisQuest above
+				for(i=0; i<this.arrayQuests.length;i++){
+					if(this.arrayQuests[i].Details === quest){
+						// Mark as completed.
+						this.arrayQuests[i].IsCompleted = true;
+						
+						return; 
+					}
+				}
+			}			
+		}
+
+		function Monster(ID, Name, MaximumDamage, RewardExperiencePoints, 
+			RewardGold, CurrentHitPoints, MaximumHitPoints){
+			LivingCreature.call(this, CurrentHitPoints, MaximumHitPoints);
+			this.ID = ID;		
+			this.Name = Name;			
+			this.MaximumDamage = MaximumDamage;	
+			this.RewardExperiencePoints = RewardExperiencePoints;			
+			this.RewardGold = RewardGold;
+			this.arrayLootTable = [];	
+		}
+
+		<!-- and finally the extra objects -->
+		function Location(ID, Name, Description, ItemRequiredToEnter, 
+			QuestAvailableHere, MonsterLivingHere){
+			this.ID = ID;
+			this.Name = Name;
+			this.Description = Description;
+            if (ItemRequiredToEnter === undefined){ItemRequiredToEnter = ""}
+			this.ItemRequiredToEnter = ItemRequiredToEnter;
+            if (QuestAvailableHere === undefined){QuestAvailableHere = ""}
+			this.QuestAvailableHere = QuestAvailableHere;
+            if (MonsterLivingHere === undefined){MonsterLivingHere = ""}
+			this.MonsterLivingHere = MonsterLivingHere;
+			this.BackgroundImage,
+			this.LocationToNorth,
+			this.LocationToEast,
+			this.LocationToSouth,
+			this.LocationToWest
+		}
+		
+		function Quest(ID, Name, Description, RewardExperiencePoints, RewardGold, RewardItem){
+			this.ID = ID;
+			this.Name = Name;
+			this.Description = Description;
+			this.RewardExperiencePoints = RewardExperiencePoints;
+			this.RewardGold = RewardGold;
+            if (RewardItem === undefined){RewardItem = ""}
+			this.RewardItem = RewardItem;
+			this.arrayQuestCompletionItems = [];
+		}
+		
+		function InventoryItem(Details, Quantity){
+			this.Details = Details;
+			this.Quantity = Quantity;
+		}
+		
+		function PlayerQuest(Details){
+			this.Details = Details;
+			IsCompleted = false;		
+		}
+		
+		function QuestCompletionItem(Details, Quantity){
+            this.Details = Details;
+            this.Quantity = Quantity;		
+		}		
+		
+		function LootItem(Details, DropPercentage, IsDefaultItem){
+			this.Details = Details;
+            this.DropPercentage = DropPercentage;
+            this.IsDefaultItem = IsDefaultItem;
+		}
+		
+		<!-- This is really just one location to hold my map and information about the world
+		let world = {
+			<!-- ID numbers for ease of use -->
+			ITEM_ID_RUSTY_SWORD: "l",
+			ITEM_ID_RAT_TAIL: "2",
+			ITEM_ID_PIECE_OF_FUR: "3",
+			ITEM_ID_SNAKE_FANG: "4",
+			ITEM_ID_SNAKESKIN: "5",
+			ITEM_ID_CLUB: "6",
+			ITEM_ID_HEALING_POTION: "7",
+			ITEM_ID_SPIDER_FANG: "8",
+			ITEM_ID_SPIDER_SILK: "9",
+			ITEM_ID_ADVENTURER_PASS: "10",
+
+			MONSTER_ID_RAT: "1",
+			MONSTER_ID_SNAKE: "2",
+			MONSTER_ID_GIANT_SPIDER: "3",
+
+			QUEST_ID_CLEAR_ALCHEMIST_GARDEN: "1",
+			QUEST_ID_CLEAR_FARMERS_FIELD: "2",
+
+			LOCATION_ID_HOME: "1",
+			LOCATION_ID_TOWN_SQUARE: "2",
+			LOCATION_ID_GUARD_POST: "3",
+			LOCATION_ID_ALCHEMIST_HUT: "4",
+			LOCATION_ID_ALCHEMISTS_GARDEN: "5",
+			LOCATION_ID_FARMHOUSE: "6",
+			LOCATION_ID_FARM_FIELD: "7",
+			LOCATION_ID_BRIDGE: "8",
+			LOCATION_ID_SPIDER_FIELD: "9",
+			
+			<!-- these next few functions create new objects to populate the world with and store them in global arrays so I can access them -->
+			PopulateItems:function(){
+				<!-- a developer I know suggested I try this method for populating my arrays. His thought was that it was more "robust" and a little -->
+				<!-- more elegant. If you have any feed back on my two methods, please let me know. -->
+				let ItemsObject = {
+					RUSTY_SWORD: new Weapon (this.ITEM_ID_RUSTY_SWORD, "Rusty sword", "Rusty swords", 0, 5),
+					RAT_TAIL: new Item(this.ITEM_ID_RAT_TAIL, "Rat tail", "Rat tails"),
+					PIECE_OF_FUR: new Item(this.ITEM_ID_PIECE_OF_FUR, "Piece of fur", "Pieces of fur"),
+					SNAKE_FANG: new Item(this.ITEM_ID_SNAKE_FANG, "Snake fang", "Snake fangs"),
+					SNAKESKIN: new Item(this.ITEM_ID_SNAKESKIN, "Snakeskin", "Snakeskins"),
+					CLUB: new Weapon(this.ITEM_ID_CLUB, "Club", "Clubs", 3, 10),
+					HEALING_POTION: new HealingPotion(this.ITEM_ID_HEALING_POTION, "Healing potion", "Healing potions", 5),
+					SPIDER_FANG: new Item(this.ITEM_ID_SPIDER_FANG, "Spider fang", "Spider fangs"),
+					SPIDER_SILK: new Item(this.ITEM_ID_SPIDER_SILK, "Spider silk", "Spider silks"),
+					ADVENTURER_PASS: new Item(this.ITEM_ID_ADVENTURER_PASS, "Adventurer pass", "Adventurer passes")
+				}
+				
+				for (i in ItemsObject){
+					arrayItems.push(ItemsObject[i]);
+				}
+			},
+			
+			PopulateMonsters:function(){
+				<!-- Method #2, simply create the items and push them into the array. Honestly I'm not sure the benefit to the above method --> 
+				<!-- maybe it has something to do with ease of updating? In this method you would have to update multiple sections of code -->
+				<!-- to add a new monster, in the above you would just need one more line. -->
+				let rat = new Monster(this.MONSTER_ID_RAT, "Rat", 5, 3, 10, 3, 3);
+				rat.arrayLootTable.push(new LootItem(this.ItemByID(this.ITEM_ID_RAT_TAIL), 75, false));
+				rat.arrayLootTable.push(new LootItem(this.ItemByID(this.ITEM_ID_PIECE_OF_FUR), 75, true));				
+	
+				let snake = new Monster(this.MONSTER_ID_SNAKE, "Snake", 5, 3, 10, 3, 3);
+				snake.arrayLootTable.push(new LootItem(this.ItemByID(this.ITEM_ID_SNAKE_FANG), 75, false));
+				snake.arrayLootTable.push(new LootItem(this.ItemByID(this.ITEM_ID_SNAKESKIN), 75, true));
+
+				let giantSpider = new Monster(this.MONSTER_ID_GIANT_SPIDER, "Giant spider", 20, 5, 40, 10, 10);
+				giantSpider.arrayLootTable.push(new LootItem(this.ItemByID(this.ITEM_ID_SPIDER_FANG), 75, true));
+				giantSpider.arrayLootTable.push(new LootItem(this.ItemByID(this.ITEM_ID_SPIDER_SILK), 25, false));	
+			
+				arrayMonsters.push(rat);
+				arrayMonsters.push(snake);
+				arrayMonsters.push(giantSpider);
+			},
+			
+			PopulateQuests:function(){
+				let clearAlchemistGarden = new Quest(
+					this.QUEST_ID_CLEAR_ALCHEMIST_GARDEN,
+                    "Clear the alchemist's garden",
+                    "Kill rats in the alchemist's garden and bring back 3 rat tails. You will receive a healing potion and 10 gold pieces.", 20, 10);
+
+				clearAlchemistGarden.arrayQuestCompletionItems.push(new QuestCompletionItem(this.ItemByID(this.ITEM_ID_RAT_TAIL), 3));
+
+				clearAlchemistGarden.RewardItem = this.ItemByID(this.ITEM_ID_HEALING_POTION);
+			
+				let clearFarmersField = new Quest(
+                    this.QUEST_ID_CLEAR_FARMERS_FIELD,
+                    "Clear the farmer's field",
+                    "Kill snakes in the farmer's field and bring back 3 snake fangs. You will receive an adventurer's pass and 20 gold pieces.", 20, 20);
+
+				clearFarmersField.arrayQuestCompletionItems.push(new QuestCompletionItem(this.ItemByID(this.ITEM_ID_SNAKE_FANG), 3));
+
+				clearFarmersField.RewardItem = this.ItemByID(this.ITEM_ID_ADVENTURER_PASS);
+
+				arrayQuests.push(clearAlchemistGarden);
+				arrayQuests.push(clearFarmersField);
+			},
+			
+			<!-- this is the long one....   -->
+			PopulateLocations:function(){
+				// first build each location and add any quests or monsters
+				let home = new Location(this.LOCATION_ID_HOME, "Home", "Your house. You really need to clean up the place.");
+				let townSquare = new Location(this.LOCATION_ID_TOWN_SQUARE, "Town square", "You see a fountain.");
+				let alchemistHut = new Location(this.LOCATION_ID_ALCHEMIST_HUT, "Alchemist's hut", "There are many strange plants on the shelves.");
+					alchemistHut.QuestAvailableHere = this.QuestByID(this.QUEST_ID_CLEAR_ALCHEMIST_GARDEN);
+				let alchemistsGarden = new Location(this.LOCATION_ID_ALCHEMISTS_GARDEN, "Alchemist's garden", "Many plants are growing here.");
+					alchemistsGarden.MonsterLivingHere = this.MonsterByID(this.MONSTER_ID_RAT);				
+				let farmhouse = new Location(this.LOCATION_ID_FARMHOUSE, "Farmhouse", "There is a small farmhouse, with a farmer in front.");
+					farmhouse.QuestAvailableHere = this.QuestByID(this.QUEST_ID_CLEAR_FARMERS_FIELD);
+				let farmersField = new Location(this.LOCATION_ID_FARM_FIELD, "Farmer's field", "You see rows of vegetables growing here.");
+					farmersField.MonsterLivingHere = this.MonsterByID(this.MONSTER_ID_SNAKE);
+				let guardPost = new Location(this.LOCATION_ID_GUARD_POST, "Guard post", "There is a large, tough-looking guard here.", this.ItemByID(this.ITEM_ID_ADVENTURER_PASS));
+				let bridge = new Location(this.LOCATION_ID_BRIDGE, "Bridge", "A stone bridge crosses a wide river.");
+				let spiderField = new Location(this.LOCATION_ID_SPIDER_FIELD, "Forest", "You see spider webs covering covering the trees in this forest.");
+					spiderField.MonsterLivingHere = this.MonsterByID(this.MONSTER_ID_GIANT_SPIDER);
+
+				// Now I need to link the locations to build a "world"	For now I will have only one "blocked path" message
+				home.LocationToNorth = townSquare;
+				home.LocationToEast = "blocked";
+				home.LocationToSouth = "blocked";
+				home.LocationToWest = "blocked";
+
+				townSquare.LocationToNorth = alchemistHut;
+				townSquare.LocationToSouth = home;
+				townSquare.LocationToEast = guardPost;
+				townSquare.LocationToWest = farmhouse;
+
+				farmhouse.LocationToNorth = "blocked";
+				farmhouse.LocationToEast = townSquare;
+				farmhouse.LocationToSouth = "blocked";
+				farmhouse.LocationToWest = farmersField;
+
+				farmersField.LocationToNorth = "blocked";
+				farmersField.LocationToEast = farmhouse;
+				farmersField.LocationToSouth = "blocked";
+				farmersField.LocationToWest = "blocked";
+
+				alchemistHut.LocationToNorth = alchemistsGarden;
+				alchemistHut.LocationToEast = "blocked";
+				alchemistHut.LocationToSouth = townSquare;
+				alchemistHut.LocationToWest = "blocked";
+
+				alchemistsGarden.LocationToNorth = "blocked";
+				alchemistsGarden.LocationToEast = "blocked";
+				alchemistsGarden.LocationToSouth = alchemistHut;
+				alchemistsGarden.LocationToWest = "blocked";
+
+				guardPost.LocationToNorth = "blocked";
+				guardPost.LocationToEast = bridge;
+				guardPost.LocationToSouth = "blocked";
+				guardPost.LocationToWest = townSquare;
+
+				bridge.LocationToNorth = "blocked";
+				bridge.LocationToEast = spiderField;
+				bridge.LocationToSouth = "blocked";
+				bridge.LocationToWest = guardPost;
+
+				spiderField.LocationToNorth = "blocked";
+				spiderField.LocationToEast = "blocked";
+				spiderField.LocationToSouth = "blocked";
+				spiderField.LocationToWest = bridge;					
+				
+				<!-- I need to assign background images to each location -->
+				home.BackgroundImage = 'Images/Home.jpg';
+				townSquare.BackgroundImage = "Images/townSquare.jpg";
+				guardPost.BackgroundImage = "Images/guardPost.jpg";
+				alchemistHut.BackgroundImage = "Images/alchemistHut.jpg";
+				alchemistsGarden.BackgroundImage = "Images/alchemistGarden.jpg";
+				farmhouse.BackgroundImage = "Images/farmhouse.jpg";
+				farmersField.BackgroundImage = "Images/farmersField.jpg";
+				bridge.BackgroundImage = "Images/bridge.jpg";
+				spiderField.BackgroundImage = "Images/spiderField.jpg";
+				
+				<!-- and then add them all to my list -->
+				arrayLocations.push(home);
+				arrayLocations.push(townSquare);
+				arrayLocations.push(guardPost);
+				arrayLocations.push(alchemistHut);
+				arrayLocations.push(alchemistsGarden);
+				arrayLocations.push(farmhouse);
+				arrayLocations.push(farmersField);
+				arrayLocations.push(bridge);
+				arrayLocations.push(spiderField);
+			},
+			
+			<!-- Just a little helper function to get items from ids
+			ItemByID:function(id){				// Accepts the ID and returns the OBJECT!
+				for (let i=0; i < arrayItems.length; i++){
+					if(arrayItems[i].ID === id){
+						return arrayItems[i];
+					}
+				}
+				return null;
+			},
+			<!-- and for monsters...  -->
+			MonsterByID:function(id){
+				for (let i=0; i < arrayMonsters.length; i++){
+					if(arrayMonsters[i].ID === id){
+						return i;
+					}
+				}
+				return null;
+			},			
+			<!-- and quests...  -->
+			QuestByID:function(id){
+				for (let i=0; i < arrayQuests.length; i++){
+					if(arrayQuests[i].ID === id)
+					{
+						return i;
+					}
+				}
+				return null;
+			},		
+			<!-- and of course, locations...  -->
+			LocationByID:function(id){
+				for (let i=0;i < arrayLocations.length; i++){
+					if(arrayLocations[i].ID === id)
+					{
+						return i;
+					}
+				}
+				return null;
+			}
+		};
+
+		<!-- We need movement functions and I'm lazy, I only want to write it once, so each direction will call the move function -->
+		function moveNorth()
+        {
+            MoveTo(Me.CurrentLocation.LocationToNorth);
+        }
+
+        function moveEast()
+        {
+            MoveTo(Me.CurrentLocation.LocationToEast);
+        }
+
+        function moveSouth()
+        {
+            MoveTo(Me.CurrentLocation.LocationToSouth);
+        }
+
+        function moveWest()
+        {
+            MoveTo(Me.CurrentLocation.LocationToWest);
+        }
+		
+		function MoveTo(newLocation){
+		
+			//********* I first check to see if the location is "blocked" ********* 
+			if (newLocation==="blocked"){
+				ShowMessages();
+				document.getElementById("Messages").innerHTML = "The way is blocked, please go somewhere else. <br>";
+				console.log("I'm blocked, now what?") // For testing, to make sure I'm catching all the location errors
+			}
+			else{
+				// If it is NOT blocked, then do something really cool, like move
+				//Does the location have any required items
+				if(Me.HasRequiredItemToEnterThisLocation(newLocation)===false){
+						// We didn't find the required item in their inventory, so display a message and stop trying to move
+						let ErrorString = "You must have a " + newLocation.ItemRequiredToEnter.Name + " to enter this location.<br>";
+	
+						// and output it
+						document.getElementById("Messages").innerHTML = ErrorString;		
+						for (let i = 0; i < arrayOutput.length; i++){						
+						}	// I really should have a function I can pass a string to and output it. :-p
+				}
+				else{
+					// Update the player's current location
+					Me.CurrentLocation = newLocation;
+					
+					// Display current location name and description, and update the background
+					ShowMessages();	// first display the message div. 
+					document.getElementById("Messages").innerHTML = newLocation.Name + "<br>";
+					document.getElementById("Messages").innerHTML += newLocation.Description + "<br>";
+					document.getElementById("container").style.background = 'url(' + newLocation.BackgroundImage + ')';
+					
+					// Completely heal the player
+					Me.CurrentHitPoints = Me.MaximumHitPoints;
+
+					// Update Hit Points in UI
+					document.getElementById("HP").innerHTML = "HP: " + Me.CurrentHitPoints;
+					
+					// Does the location have a quest?
+					if(newLocation.QuestAvailableHere !== "")
+					{
+						playerAlreadyHasQuest = Me.HasThisQuest(newLocation.QuestAvailableHere);
+						playerAlreadyCompletedQuest = Me.CompletedThisQuest(newLocation.QuestAvailableHere);
+
+						if(Boolean(playerAlreadyHasQuest))
+						{
+							// If the player has not completed the quest yet
+							if(!Boolean(playerAlreadyCompletedQuest))
+							{
+								// See if the player has all the items needed to complete the quest
+								playerHasAllItemsToCompleteQuest = Me.HasAllQuestCompletionItems(newLocation.QuestAvailableHere);
+								
+								// The player has all items required to complete the quest
+								if(Boolean(playerHasAllItemsToCompleteQuest))
+								{	
+									// Display message
+									ShowMessages();
+									document.getElementById("Messages").innerHTML = "You complete the '" 
+										+ arrayQuests[newLocation.QuestAvailableHere].Name + "' quest.<br>";
+									
+									<!-- // Remove quest items from inventory -->
+									Me.RemoveQuestCompletionItems(newLocation.QuestAvailableHere);
+																		
+									document.getElementById("Messages").innerHTML += "You receive: <br>";
+									document.getElementById("Messages").innerHTML += arrayQuests[newLocation.QuestAvailableHere].RewardExperiencePoints + " experience points<br>";
+									document.getElementById("Messages").innerHTML += arrayQuests[newLocation.QuestAvailableHere].RewardGold + " gold<br>";
+									document.getElementById("Messages").innerHTML += arrayQuests[newLocation.QuestAvailableHere].RewardItem.Name + "<br>";
+						
+									// Give quest rewards and update UI
+									Me.xp = parseInt(Me.xp) + parseInt(arrayQuests[newLocation.QuestAvailableHere].RewardExperiencePoints);			
+									Me.gold = parseInt(Me.gold) + parseInt(arrayQuests[newLocation.QuestAvailableHere].RewardGold);
+									document.getElementById("Gld").innerHTML = "Gold:" +Me.gold;
+									document.getElementById("XP").innerHTML = "XP: " +Me.xp;
+									
+									// Add the reward item to the player's inventory
+									addedItemToPlayerInventory = false;
+									
+									// Sending the object ... the function expects the object
+									Me.AddItemToInventory(arrayQuests[newLocation.QuestAvailableHere].RewardItem);	
+															
+									// Mark the quest as completed
+									Me.MarkQuestCompleted(newLocation.QuestAvailableHere);
+								}
+							}
+						}
+						else {
+							// The player does not already have the quest
+							// Display the messages
+							ShowMessages();
+							document.getElementById("Messages").innerHTML += "You receive the " + arrayQuests[newLocation.QuestAvailableHere].Name + " quest.<br>";
+							document.getElementById("Messages").innerHTML += arrayQuests[newLocation.QuestAvailableHere].Description + "<br>";
+							document.getElementById("Messages").innerHTML += "To complete it, return with:<br>";
+							for(qci=0; qci< arrayQuests[newLocation.QuestAvailableHere].arrayQuestCompletionItems.length;qci++)
+							{
+								if(arrayQuests[newLocation.QuestAvailableHere].arrayQuestCompletionItems[qci].Quantity === 1)
+								{
+									document.getElementById("Messages").innerHTML += arrayQuests[newLocation.QuestAvailableHere].arrayQuestCompletionItems[qci].Quantity 
+										+ " " + arrayItems[arrayQuests[newLocation.QuestAvailableHere].arrayQuestCompletionItems[qci].Details].Name + "<br>";
+								}
+								else
+								{
+									document.getElementById("Messages").innerHTML += arrayQuests[newLocation.QuestAvailableHere].arrayQuestCompletionItems[qci].Quantity 
+										+ " " + arrayQuests[newLocation.QuestAvailableHere].arrayQuestCompletionItems[qci].Details.NamePlural + "<br>";
+								}
+							}
+							document.getElementById("Messages").innerHTML += "<br>";							
+							// Add the quest to the player's quest list
+							Me.arrayQuests.push(new PlayerQuest(newLocation.QuestAvailableHere));
+						}
+					}					
+					// Does the location have a monster?
+					if(newLocation.MonsterLivingHere !== "")			
+					{
+						ShowMessages();
+						document.getElementById("Messages").innerHTML += "You see a " + arrayMonsters[newLocation.MonsterLivingHere].Name + "<br>";
+						
+						// Make a new monster, using the values from the standard monster in the World.Monster list
+						let standardMonster = arrayMonsters[newLocation.MonsterLivingHere];
+						
+						currentMonster = new Monster(standardMonster.ID, standardMonster.Name, standardMonster.MaximumDamage,
+							standardMonster.RewardExperiencePoints, standardMonster.RewardGold, standardMonster.CurrentHitPoints, 
+							standardMonster.MaximumHitPoints);		
+							
+						for(lootitem = 0; lootitem < standardMonster.arrayLootTable.length; lootitem++)
+						{
+							currentMonster.arrayLootTable.push(standardMonster.arrayLootTable[lootitem]);
+						}
+					}
+					else
+					{
+						currentMonster = "";
+					}	
+				} // End of the required item else statement
+			} // End of the Blocked else statement
+		}	// End of the moveTo() 
+
+		// I need a random number generator
+		function getRandomIntInclusive(min, max) {
+			min = Math.ceil(min);
+			max = Math.floor(max);
+			return Math.floor(Math.random() * (max - min + 1)) + min;
+		}
+		// Now lets kill something
+		function useWeapon(){
+			//lets make sure there is a living monster
+			if (currentMonster !== ""){
+				currentWeapon = world.ItemByID(world.ITEM_ID_RUSTY_SWORD);	// this is a great place for expansion
+				
+				// Determine the amount of damage to do to the monster
+				let damageToMonster = this.getRandomIntInclusive(currentWeapon.MinimumDamage,
+					currentWeapon.MaximumDamage);
+	 
+				// Apply the damage to the monster's CurrentHitPoints
+				currentMonster.CurrentHitPoints -= damageToMonster;
+				console.log(currentMonster.CurrentHitPoints);
+				// Display message
+				ShowMessages();
+				document.getElementById("Messages").innerHTML += "You hit the " + currentMonster.Name + 
+					" for " + damageToMonster + " points.</br>";
+					
+				// Check if the monster is dead
+				if(currentMonster.CurrentHitPoints <= 0){
+					// Monster is dead
+					document.getElementById("Messages").innerHTML += "<br>You defeated the " 
+						+ currentMonster.Name + "<br>";
+					// Give player experience points for killing the monster
+					
+					Me.xp = parseInt(Me.xp) + parseInt(currentMonster.RewardExperiencePoints); 
+					document.getElementById("Messages").innerHTML += "You receive " + currentMonster.RewardExperiencePoints
+						+ " experience points<br>";
+					// Give player gold for killing the monster 
+					Me.gold = parseInt(Me.gold) + parseInt(currentMonster.RewardGold);			
+					document.getElementById("Messages").innerHTML += "You receive " + currentMonster.RewardGold
+					+ " gold<br>";
+					// Get random loot items from the monster				
+					let lootedItems = [];
+					// Add items to the lootedItems list, comparing a random number to the drop percentage
+					for(LootItem = 0; LootItem< currentMonster.arrayLootTable.length; LootItem++)
+					{
+						if(getRandomIntInclusive(1, 100) <= currentMonster.arrayLootTable[LootItem].DropPercentage)
+						{
+							lootedItems.push(new InventoryItem(currentMonster.arrayLootTable[LootItem].Details, 1));
+						}
+					}
+					// If no items were randomly selected, then add the default loot item(s).
+					if(lootedItems.length === 0)
+					{
+						for(LootItem = 0; LootItem< currentMonster.arrayLootTable.length; LootItem++)
+						{
+							if(currentMonster.arrayLootTable[LootItem].IsDefaultItem)
+							{
+								lootedItems.push(new InventoryItem(currentMonster.arrayLootTable[LootItem].Details, 1));
+							}
+						}
+					}
+					// Add the looted items to the player's inventory
+					for(let ii=0; ii<lootedItems.length; ii++)
+					{
+						Me.AddItemToInventory(lootedItems[ii].Details);
+	 
+						if(lootedItems[ii].Quantity === 1)
+						{
+							document.getElementById("Messages").innerHTML += "You loot " + lootedItems[ii].Quantity 
+								+ " " + lootedItems[ii].Details.Name + "<br>";
+						}
+						else
+						{
+							document.getElementById("Messages").innerHTML += "You loot " + lootedItems[ii].Quantity 
+								+ " " + lootedItems[ii].Details.NamePlural + "<br>";
+						}
+					}
+					// Refresh player information
+					document.getElementById("HP").innerHTML = "HP: " + Me.CurrentHitPoints;	<!-- currently this is concatinizing the string rather than adding ints. TODO
+					document.getElementById("Gld").innerHTML = "Gold: "+ Me.gold;
+					document.getElementById("XP").innerHTML = "Experience: "+ Me.xp;
+					// finaly remove the body
+					currentMonster = "";
+				}
+				else{
+					// Monster is still alive
+	 
+					// Determine the amount of damage the monster does to the player
+					let damageToPlayer = getRandomIntInclusive(0, currentMonster.MaximumDamage);
+	 
+					// Display message
+					ShowMessages();
+					document.getElementById("Messages").innerHTML += "The " + currentMonster.Name + " did " + damageToPlayer + 
+						" points of damage.<br>";
+	 
+					// Subtract damage from player
+					Me.CurrentHitPoints -= damageToPlayer;
+	 
+					// Refresh player data in UI
+					document.getElementById("HP").innerHTML = "HP: " + Me.CurrentHitPoints;
+	 
+					if(Me.CurrentHitPoints <= 0)
+					{	 
+						// Move player to "Home"
+						MoveTo(arrayLocations[world.LocationByID(world.LOCATION_ID_HOME)]);						
+						// Display message
+						document.getElementById("Messages").innerHTML += "You have been killed, thankfully you wake up in your bed.<br>";
+					}
+				}
+			}
+			else {
+			// There is nothing to attack
+			document.getElementById("Messages").innerHTML = "There is nothing to attack";
+			}
+		}	
+		
+		function usePotion(){
+			//first we see if the player has one
+			let hasPortion = false;
+			for (let i = 0; i< Me.arrayInventory.length; i++){
+				if(Me.arrayInventory[i].Details.ID === arrayItems[world.ItemByID(world.ITEM_ID_HEALING_POTION)].ID)
+				{
+					// Potion found
+					hasPortion = true;
+						
+					// Add healing amount to the player's current hit points
+					Me.CurrentHitPoints = (parseInt(Me.CurrentHitPoints) + HealingPotion.AmountToHeal);
+		 
+					// CurrentHitPoints cannot exceed player's MaximumHitPoints
+					if(Me.CurrentHitPoints > Me.MaximumHitPoints)
+					{
+						Me.CurrentHitPoints = Me.MaximumHitPoints;
+					}
+					// Remove the potion from the player's inventory
+					for(let ii = 0; ii < Me.arrayInventory.length; ii++)
+					{
+						if(arrayItems[Me.arrayInventory[ii].Details].ID === arrayItems[world.ItemByID(world.ITEM_ID_HEALING_POTION)].ID)
+						{
+							Me.arrayInventory[ii].Quantity--;
+							if (Me.arrayInventory[ii].Quantity === 0){					
+								Me.arrayInventory.splice(ii,1); 
+							}
+							return;
+						}
+					}
+					// Display message
+					document.getElementById("Messages").innerHTML += "You drink a " + potion.Name + "<br>";
+				}
+			}
+			if(hasPortion === false){
+				window.alert("You don't have a potion to drink")
+
+			}				
+		}
+		// I moved this out of the end of the combat function so that I could pause the script, in essense, so the user could see the output before
+		// resetting it
+		function lookAround(){
+			// Move player to current location (to heal player and create a new monster to fight)
+            MoveTo(Me.CurrentLocation);
+		}
+		
+		// A few short functions I can call to show or hide the various divs to display data
+		function ShowMessages(){
+			// first turn all elements hidden
+			var x = document.getElementsByClassName("switchingDivs");
+			for(let i = 0; i < x.length; i++){
+				x[i].style.display = "none";
+			}
+			// then 'turn on' the one we want
+			document.getElementById("Messages").style.display = "block";
+		}
+		function ShowHelp(){
+			// first turn all elements hidden
+			var x = document.getElementsByClassName("switchingDivs");
+			for(let i = 0; i < x.length; i++){
+				x[i].style.display = "none";
+			}
+			// then 'turn on' the one we want
+			document.getElementById("Help").style.display = "block";
+			document.getElementById("pHelp").removeAttribute("hidden");
+		}
+		function ShowInventory(){
+			// first turn all elements hidden
+			var x = document.getElementsByClassName("switchingDivs");
+			for(let i = 0; i < x.length; i++){
+				x[i].style.display = "none";
+			}
+			// then 'turn on' the one we want
+			document.getElementById("Inventory").style.display = "block";
+			// and display the inventory array contents
+			let inventoryString = "Inventory <br>";
+			for (let i = 0; i< Me.arrayInventory.length; i++){
+				if(Me.arrayInventory[i].Quantity === 1)
+				{
+					inventoryString += Me.arrayInventory[i].Quantity 
+						+ " " + Me.arrayInventory[i].Details.Name + "<br>";
+				}
+				else
+				{
+					inventoryString += Me.arrayInventory[i].Quantity 
+						+ " " + Me.arrayInventory[i].Details.NamePlural + "<br>";
+				}			
+			}
+			document.getElementById("Inventory").innerHTML = inventoryString;	
+		}
+		function ShowQuests(){				// Perhaps I should add a section to display if the quest has already been completed and or turned in. IE
+											// the status?  eh...   "planned feature"
+			// first turn all elements hidden
+			var x = document.getElementsByClassName("switchingDivs");
+			for(let i = 0; i < x.length; i++){
+				x[i].style.display = "none";
+			}
+			// then 'turn on' the one we want
+			document.getElementById("Quests").style.display = "block"
+			// and display the quest array contents
+			let questString = "Quests <br>";
+			for (let i = 0; i< Me.arrayQuests.length; i++){
+				questString += arrayQuests[Me.arrayQuests[i].Details].Name + "<br>"
+				+ arrayQuests[Me.arrayQuests[i].Details].Description + "<br>";			
+			}	
+			document.getElementById("Quests").innerHTML = questString;
+		}
+		function Save(){
+			// first double check we can save
+			if (typeof(Storage) !== "undefined") {
+				// We want to save the location and the inventory. 
+				localStorage.location = Me.CurrentLocation.ID;
+				localStorage.inventory = JSON.stringify(Me.arrayInventory)
+			} else {
+				// Sorry! No Web Storage support..
+				window.alert("I'm sorry, your browser does not support local storage.")
+			}		
+		}
+		function Load(){
+			// Retrieve
+			let retrievedloc = localStorage.location; 	<!-- Only the ID
+			let retrievedInv = localStorage.inventory;	<!-- it is still a string
+			let retrievedInvArray = JSON.parse(retrievedInv); <!-- Now it is an array
+			MoveTo(arrayLocations[world.LocationByID(retrievedloc)]); <!-- get the location from the ID and move there
+			Me.arrayInventory = (retrievedInvArray);	<!-- set our inventory to the array
+		}
+		
+		
+			
+		<!-- On page load, create the world and populate it with locations, things and bad guys -->
+		document.addEventListener("DOMContentLoaded", 
+			function() {
+				<!-- set up the world -->
+				world.PopulateItems();
+				world.PopulateMonsters();
+				world.PopulateQuests();
+				world.PopulateLocations();
+				<!-- move the player to the starting location -->				
+				MoveTo(arrayLocations[world.LocationByID(world.LOCATION_ID_HOME)]);
+				<!-- okay okay, we'll give them a fighting chance with a starter weapon -->
+				Me.arrayInventory.push(new InventoryItem(world.ItemByID(world.ITEM_ID_RUSTY_SWORD), 1));
+				<!-- Set the display so the player knows his status -->
+				document.getElementById("HP").innerHTML = "HP: "+Me.CurrentHitPoints;
+				document.getElementById("Gld").innerHTML = "Gold: " + Me.gold;
+				document.getElementById("XP").innerHTML += Me.xp;
+				document.getElementById("Lvl").innerHTML += Me.lvl;
+			}
+		);	
+	</script>
+</body>
+</html>
